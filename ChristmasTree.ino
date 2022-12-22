@@ -16,12 +16,12 @@ Uses https://forum.arduino.cc/t/random-option-from-array-without-repetition/4845
 #define SEED PB3
 
 // changing variables
-uint16_t sleepTime; 	// wait time between LEDs [ms]
-uint32_t lastTime;  	// last timestamp for delay
-uint32_t data;      	// 32-bits for 24 LEDs
-uint8_t numBits;		// tracks number of bits active in current data value
-uint8_t bitArray[24];	// keeps all bits we can light up
-uint8_t usedBits;		// tracks how many bits were already lit up
+uint16_t sleepTime;    // wait time between LEDs [ms]
+uint32_t lastTime;     // last timestamp for delay
+uint32_t data;         // 32-bits for 24 LEDs
+uint8_t numBits;       // tracks number of bits active in current data value
+uint8_t bitArray[24];  // keeps all bits we can light up
+uint8_t usedBits;      // tracks how many bits were already lit up
 
 // Prep and setup stuff goes here...
 void setup() {
@@ -34,41 +34,42 @@ void setup() {
 
   // default conditions
   data = 0;
-  sleepTime = 700;
+  sleepTime = 350;
   lastTime = 0;
   randomSeed(getSeed());
-  resetArray();				//default fill array with all values
-  
+  resetArray();  //default fill array with all values
+
   // Serial.begin(19200);
-  
+
   // for (int i = 0; i <= 23; i++){
   //   Serial.print(i);
   //   Serial.print(": ");
   //   Serial.println(bitArray[i]);
   // }
   // Serial.println("");
-  
+
   sei();  // enable interrupts after setup
 }
 
 // Main loop
 void loop() {
   if ((millis() - lastTime) >= sleepTime) {  // if delay time is over...
-    lastTime = millis();
-   	data = 0;
+    lastTime = millis();    // update timestamp
+    randomSeed(getSeed());  // get new random seed
+    data = 0;
     numBits = 0;
-    
+
     // fetch me four bits (and set them, obviously)
-    while(numBits<4){
-      data |= (1ul<<selectRandomBit());
+    while (numBits < 4) {
+      data |= (1ul << selectRandomBit());
       //Serial.println(data,BIN);
       numBits++;
     }
-    
+
     // Serial.print(data,BIN);
     // Serial.println(",");
     // Serial.println("Done with output bits. Shifting out.");
-    
+
     //Shift the data out
     digitalWrite(LATCH, 0);          // set latch pin LOW so nothing gets shifted out
     shiftOutShort(DATA, CLK, data);  // shift out LED states in that layer
@@ -79,47 +80,47 @@ void loop() {
 }
 
 // Select random entry from array, from remaining choices
-uint8_t selectRandomBit(){
+uint8_t selectRandomBit() {
   //check if we've run out of values
-  if(usedBits > 23){
+  if (usedBits > 23) {
     resetArray();
   }
-  
+
   // Select random value (from values not yet used) and shift value used to the beginning
   // of the array to skip it next time (by incrementing a counter where to start the random
   // range). This effectively skips all values already used.
-  uint8_t selection = random(usedBits,23);	// select random index from not yet used indices
-  uint8_t temp = bitArray[usedBits];		// save value at current position to temporary variable
-  bitArray[usedBits] = bitArray[selection];	// overwrite current array position with value at random position from before
-  bitArray[selection] = temp;				// overwrite random position from before with previously saved current position
-  
+  uint8_t selection = random(usedBits, 23);  // select random index from not yet used indices
+  uint8_t temp = bitArray[usedBits];         // save value at current position to temporary variable
+  bitArray[usedBits] = bitArray[selection];  // overwrite current array position with value at random position from before
+  bitArray[selection] = temp;                // overwrite random position from before with previously saved current position
+
   // Serial.print("Chosen bit: ");
   // Serial.println(bitArray[usedBits]);
-  return bitArray[usedBits++];				// return value at current position + 1
+  return bitArray[usedBits++];  // return value at current position + 1
 }
 
 // Refills the array with all values
-void resetArray(){
+void resetArray() {
   // refill choices in ascending order
-  for (int i = 0; i <= 23; i++){
+  for (int i = 0; i <= 23; i++) {
     bitArray[i] = i;
   }
-  
+
   // scramble the array of available choices to generate a random order
-  for (int i = 0; i <= 23; i++){
-    int index = random(i, 23);		// generate random number between i and max value
-    int temp = bitArray[i];			// save i-th value to temporary variable
-    bitArray[i] = bitArray[index];	// overwrite i-th value with random position from before
-    bitArray[index] = temp;			// overwrite random position from before with previously i-th value
+  for (int i = 0; i <= 23; i++) {
+    int index = random(i, 23);      // generate random number between i and max value
+    int temp = bitArray[i];         // save i-th value to temporary variable
+    bitArray[i] = bitArray[index];  // overwrite i-th value with random position from before
+    bitArray[index] = temp;         // overwrite random position from before with previously i-th value
   }
-  
-  usedBits = 0;	// reset counter for how many values were picked already
+
+  usedBits = 0;  // reset counter for how many values were picked already
   // Serial.println(";");
 }
 
 // Generates a random see from reading the three LSBs of an input pin and combining them into a 12 bit number
-uint32_t getSeed(void) {
-  uint32_t seedValue = 0;
+uint16_t getSeed(void) {
+  uint16_t seedValue = 0;
 
   seedValue |= (analogRead(SEED) & 0b0111);
   seedValue |= (analogRead(SEED) & 0b0111) << 3;
@@ -128,9 +129,9 @@ uint32_t getSeed(void) {
 }
 
 // This shifts 24 bits out MSB first, on the rising edge of the clock.
-void shiftOutShort(int dataPin, int clockPin, short toBeSent) {
+void shiftOutShort(uint8_t dataPin, uint8_t clockPin, uint32_t toBeSent) {
   int i = 0;
-  int pinState = 0;
+  uint8_t pinState = 0;
 
   // clear everything out just in case
   digitalWrite(dataPin, 0);
