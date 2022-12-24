@@ -34,7 +34,7 @@ void setup() {
 
   // default conditions
   data = 0;
-  sleepTime = 350;
+  sleepTime = 250;
   lastTime = 0;
   randomSeed(getSeed());
   resetArray();  //default fill array with all values
